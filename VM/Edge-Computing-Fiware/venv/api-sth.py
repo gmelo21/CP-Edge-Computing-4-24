@@ -47,7 +47,7 @@ def clean_value(value):
         value = value.replace('°C', '').replace('%', '').strip()
     return float(value)
 
-lastN = 10
+lastN = 30
 
 app = dash.Dash(__name__)
 
