@@ -67,26 +67,30 @@ def update_data_store(n, stored_data):
     temperature_data = get_data('temperature', lastN)
 
     if luminosity_data:
-        luminosity_values = [float(entry['attrValue']) for entry in luminosity_data]
-        timestamps = [entry['recvTime'] for entry in luminosity_data]
-        timestamps = convert_to_sao_paulo_time(timestamps)
+        new_luminosity_values = [float(entry['attrValue']) for entry in luminosity_data]
+        new_timestamps = [entry['recvTime'] for entry in luminosity_data]
+        new_timestamps = convert_to_sao_paulo_time(new_timestamps)
 
-        # Sort the timestamps and associated data to ensure chronological order
-        sorted_data = sorted(zip(timestamps, luminosity_values))
-        sorted_timestamps, sorted_luminosity_values = zip(*sorted_data)
+        # Append new data to the existing data
+        stored_data['timestamps'].extend(new_timestamps)
+        stored_data['luminosity_values'].extend(new_luminosity_values)
 
-        stored_data['timestamps'] = list(sorted_timestamps)  # Overwrite with sorted data
-        stored_data['luminosity_values'] = list(sorted_luminosity_values)
+        # Keep only the last 30 entries
+        stored_data['timestamps'] = stored_data['timestamps'][-lastN:]
+        stored_data['luminosity_values'] = stored_data['luminosity_values'][-lastN:]
 
     if humidity_data:
-        humidity_values = [float(entry['attrValue'].replace('%', '').strip()) for entry in humidity_data]
-        stored_data['humidity_values'] = humidity_values
+        new_humidity_values = [float(entry['attrValue'].replace('%', '').strip()) for entry in humidity_data]
+        stored_data['humidity_values'].extend(new_humidity_values)
+        stored_data['humidity_values'] = stored_data['humidity_values'][-lastN:]
 
     if temperature_data:
-        temperature_values = [float(entry['attrValue'].replace('°C', '').strip()) for entry in temperature_data]
-        stored_data['temperature_values'] = temperature_values
+        new_temperature_values = [float(entry['attrValue'].replace('°C', '').strip()) for entry in temperature_data]
+        stored_data['temperature_values'].extend(new_temperature_values)
+        stored_data['temperature_values'] = stored_data['temperature_values'][-lastN:]
 
     return stored_data
+
 
 # Callback to update the graph with the new data
 @app.callback(
