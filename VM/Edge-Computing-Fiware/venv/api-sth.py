@@ -6,17 +6,13 @@ import requests
 from datetime import datetime
 import pytz
 
-# Constants for IP address, port, and number of recent data points
 IP_ADDRESS = "191.235.32.167"
 PORT_STH = 8666
 DASH_HOST = "0.0.0.0"
-lastN = 30  # Number of most recent data points to retrieve
 
-# Function to get data from the API for a specific attribute
 def get_data(attribute, lastN):
     url = f"http://{IP_ADDRESS}:{PORT_STH}/STH/v1/contextEntities/type/Lamp/id/urn:ngsi-ld:Lamp:EDGE4/attributes/{attribute}?lastN={lastN}"
     headers = {
-        'Content-Type': 'application/json',
         'fiware-service': 'smart',
         'fiware-servicepath': '/'
     }
@@ -24,17 +20,18 @@ def get_data(attribute, lastN):
     if response.status_code == 200:
         data = response.json()
         try:
-            return data['contextResponses'][0]['contextElement']['attributes'][0]['values']
-        except KeyError:
-            return []  # Return an empty list if the expected data structure is not found
+            values = data['contextResponses'][0]['contextElement']['attributes'][0]['values']
+            return values
+        except KeyError as e:
+            print(f"Key error: {e}")
+            return []
     else:
-        print(f"Error accessing {url}: {response.status_code}, {response.text}")
-        return []  # Return an empty list if the request fails
+        print(f"Error accessing {url}: {response.status_code}")
+        return []
 
-# Function to convert UTC timestamps to São Paulo time
 def convert_to_sao_paulo_time(timestamps):
-    utc = pytz.utc  # UTC timezone
-    sao_paulo = pytz.timezone('America/Sao_Paulo')  # São Paulo timezone
+    utc = pytz.utc
+    sao_paulo = pytz.timezone('America/Sao_Paulo')
     converted_timestamps = []
     for timestamp in timestamps:
         try:
@@ -45,57 +42,56 @@ def convert_to_sao_paulo_time(timestamps):
         converted_timestamps.append(converted_time)
     return converted_timestamps
 
+def clean_value(value):
+    if isinstance(value, str):
+        value = value.replace('°C', '').replace('%', '').strip()
+    return float(value)
+
+lastN = 10
+
 app = dash.Dash(__name__)
 
-# Define the layout of the Dash app
 app.layout = html.Div([
-    html.H1('Luminosity, Humidity, and Temperature Data Viewer'),  # Title of the app
-    dcc.Graph(id='data-graph'),  # Graph component to display the data
-    dcc.Store(id='data-store', data={'timestamps': [], 'luminosity_values': [], 'humidity_values': [], 'temperature_values': []}),
-    dcc.Interval(id='interval-component', interval=10*1000, n_intervals=0)  # Update data every 10 seconds
+    html.H1('Sensor Data Viewer'),
+    dcc.Graph(id='sensor-graph'),
+    dcc.Store(id='sensor-data-store', data={'timestamps': [], 'luminosity_values': [], 'humidity_values': [], 'temperature_values': []}),
+    dcc.Interval(
+        id='interval-component',
+        interval=10*1000,
+        n_intervals=0
+    )
 ])
 
-# Callback to update the data store with new data from the API
 @app.callback(
-    Output('data-store', 'data'),
+    Output('sensor-data-store', 'data'),
     Input('interval-component', 'n_intervals'),
-    State('data-store', 'data')
+    State('sensor-data-store', 'data')
 )
 def update_data_store(n, stored_data):
-    luminosity_data = get_data('luminosity', lastN)
-    humidity_data = get_data('humidity', lastN)
-    temperature_data = get_data('temperature', lastN)
+    data_luminosity = get_data('luminosity', lastN)
+    data_humidity = get_data('humidity', lastN)
+    data_temperature = get_data('temperature', lastN)
 
-    if luminosity_data:
-        new_luminosity_values = [float(entry['attrValue']) for entry in luminosity_data]
-        new_timestamps = [entry['recvTime'] for entry in luminosity_data]
-        new_timestamps = convert_to_sao_paulo_time(new_timestamps)
+    if data_luminosity and data_humidity and data_temperature:
+        luminosity_values = [float(entry['attrValue']) for entry in data_luminosity]
+        humidity_values = [clean_value(entry['attrValue']) for entry in data_humidity]
+        temperature_values = [clean_value(entry['attrValue']) for entry in data_temperature]
+        timestamps = [entry['recvTime'] for entry in data_luminosity]
 
-        # Append new data to the existing data
-        stored_data['timestamps'].extend(new_timestamps)
-        stored_data['luminosity_values'].extend(new_luminosity_values)
+        timestamps = convert_to_sao_paulo_time(timestamps)
 
-        # Keep only the last 30 entries
-        stored_data['timestamps'] = stored_data['timestamps'][-lastN:]
-        stored_data['luminosity_values'] = stored_data['luminosity_values'][-lastN:]
+        stored_data['timestamps'].extend(timestamps)
+        stored_data['luminosity_values'].extend(luminosity_values)
+        stored_data['humidity_values'].extend(humidity_values)
+        stored_data['temperature_values'].extend(temperature_values)
 
-    if humidity_data:
-        new_humidity_values = [float(entry['attrValue'].replace('%', '').strip()) for entry in humidity_data]
-        stored_data['humidity_values'].extend(new_humidity_values)
-        stored_data['humidity_values'] = stored_data['humidity_values'][-lastN:]
-
-    if temperature_data:
-        new_temperature_values = [float(entry['attrValue'].replace('°C', '').strip()) for entry in temperature_data]
-        stored_data['temperature_values'].extend(new_temperature_values)
-        stored_data['temperature_values'] = stored_data['temperature_values'][-lastN:]
+        return stored_data
 
     return stored_data
 
-
-# Callback to update the graph with the new data
 @app.callback(
-    Output('data-graph', 'figure'),
-    Input('data-store', 'data')
+    Output('sensor-graph', 'figure'),
+    Input('sensor-data-store', 'data')
 )
 def update_graph(stored_data):
     if stored_data['timestamps']:
@@ -111,27 +107,28 @@ def update_graph(stored_data):
             y=stored_data['humidity_values'],
             mode='lines+markers',
             name='Humidity',
-            line=dict(color='green')
+            line=dict(color='blue')
         )
         trace_temperature = go.Scatter(
             x=stored_data['timestamps'],
             y=stored_data['temperature_values'],
             mode='lines+markers',
             name='Temperature',
-            line=dict(color='blue')
+            line=dict(color='green')
         )
 
-        fig_data = go.Figure(data=[trace_luminosity, trace_humidity, trace_temperature])
-        fig_data.update_layout(
-            title='Luminosity, Humidity, and Temperature Over Time',
+        fig = go.Figure(data=[trace_luminosity, trace_humidity, trace_temperature])
+
+        fig.update_layout(
+            title='Sensor Data Over Time',
             xaxis_title='Timestamp',
             yaxis_title='Values',
             hovermode='closest'
         )
 
-        return fig_data
+        return fig
 
-    return {}  # Return an empty figure if no data is available
+    return {}
 
 if __name__ == '__main__':
-    app.run_server(debug=True, host=DASH_HOST, port=8051)
+    app.run_server(debug=True, host=DASH_HOST, port=8050)
