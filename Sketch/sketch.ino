@@ -67,7 +67,7 @@ void loop() {
     handleHumidity();  // Handle humidity sensor reading
     handleTemperature();  // Handle temperature sensor reading
     MQTT.loop();  // Process incoming messages
-    delay(1000);  // Wait for 5 seconds before publishing next data
+    delay(1000);  // Wait for 1 seconds before publishing next data
 
 
     // Handle logging at intervals
