@@ -631,7 +631,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://{{url}}:8666/STH/v1/contextEntities/type/Lamp/id/urn:ngsi-ld:Lamp:EDGE4/attributes/luminosity?lastN=30",
+							"raw": "http://{{url}}:8666/STH/v1/contextEntities/type/Lamp/id/urn:ngsi-ld:Lamp:EDGE4/attributes/luminosity?lastN=10",
 							"protocol": "http",
 							"host": [
 								"{{url}}"
@@ -663,7 +663,7 @@
 								},
 								{
 									"key": "lastN",
-									"value": "30",
+									"value": "10",
 									"description": "Especifica o número de resultados mais recentes a serem recuperados. Neste caso, está configurado como 20, o que resultará na recuperação dos 20 dados mais recentes."
 								},
 								{
@@ -712,7 +712,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://{{url}}:8666/STH/v1/contextEntities/type/Lamp/id/urn:ngsi-ld:Lamp:EDGE4/attributes/humidity?lastN=30",
+							"raw": "http://{{url}}:8666/STH/v1/contextEntities/type/Lamp/id/urn:ngsi-ld:Lamp:EDGE4/attributes/humidity?lastN=10",
 							"protocol": "http",
 							"host": [
 								"{{url}}"
@@ -744,7 +744,7 @@
 								},
 								{
 									"key": "lastN",
-									"value": "30",
+									"value": "10",
 									"description": "Especifica o número de resultados mais recentes a serem recuperados. Neste caso, está configurado como 20, o que resultará na recuperação dos 20 dados mais recentes."
 								},
 								{
@@ -793,7 +793,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://{{url}}:8666/STH/v1/contextEntities/type/Lamp/id/urn:ngsi-ld:Lamp:EDGE4/attributes/temperature?lastN=30",
+							"raw": "http://{{url}}:8666/STH/v1/contextEntities/type/Lamp/id/urn:ngsi-ld:Lamp:EDGE4/attributes/temperature?lastN=10",
 							"protocol": "http",
 							"host": [
 								"{{url}}"
@@ -825,7 +825,7 @@
 								},
 								{
 									"key": "lastN",
-									"value": "30",
+									"value": "10",
 									"description": "Especifica o número de resultados mais recentes a serem recuperados. Neste caso, está configurado como 20, o que resultará na recuperação dos 20 dados mais recentes."
 								},
 								{
